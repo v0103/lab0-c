@@ -73,13 +73,33 @@ bool q_insert_tail(struct list_head *head, char *s)
 /* Remove an element from head of queue */
 element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
 {
-    return NULL;
+    if (!head || list_empty(head))
+        return NULL;
+
+    element_t *tmp = list_first_entry(head, element_t, list);
+    list_del(head->next);
+    if (sp) {
+        strncpy(sp, tmp->value, bufsize);
+        sp[bufsize - 1] = '\0';
+    }
+
+    return tmp;
 }
 
 /* Remove an element from tail of queue */
 element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
 {
-    return NULL;
+    if (!head || list_empty(head))
+        return NULL;
+
+    element_t *tmp = list_last_entry(head, element_t, list);
+    list_del(&tmp->list);
+    if (sp) {
+        strncpy(sp, tmp->value, bufsize);
+        sp[bufsize - 1] = '\0';
+    }
+
+    return tmp;
 }
 
 /* Return number of elements in queue */
@@ -100,6 +120,17 @@ int q_size(struct list_head *head)
 bool q_delete_mid(struct list_head *head)
 {
     // https://leetcode.com/problems/delete-the-middle-node-of-a-linked-list/
+    if (!head || list_empty(head))
+        return false;
+
+    struct list_head *fast = head->next;
+    struct list_head *slow = head->next;
+    for (; fast != head && fast != head->prev;
+         fast = fast->next->next, slow = slow->next) {
+    }
+    list_del(slow);
+    q_release_element(list_entry(slow, element_t, list));
+
     return true;
 }
 
@@ -107,12 +138,30 @@ bool q_delete_mid(struct list_head *head)
 bool q_delete_dup(struct list_head *head)
 {
     // https://leetcode.com/problems/remove-duplicates-from-sorted-list-ii/
+    if (!head || list_empty(head))
+        return false;
+
+    bool dup_last = false;
+    element_t *entry, *safe;
+    list_for_each_entry_safe (entry, safe, head, list)
+        if (&safe->list != head && !strcmp(entry->value, safe->value)) {
+            list_del(&entry->list);
+            q_release_element(entry);
+            dup_last = true;
+        } else if (dup_last) {  // del dup last one
+            list_del(&entry->list);
+            q_release_element(entry);
+            dup_last = false;
+        }
     return true;
 }
 
 /* Swap every two adjacent nodes */
 void q_swap(struct list_head *head)
 {
+    // struct list_head *node, *safe;
+    // list_for_each_safe (node, safe, head)
+
     // https://leetcode.com/problems/swap-nodes-in-pairs/
 }
 
