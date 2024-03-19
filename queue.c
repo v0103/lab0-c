@@ -206,8 +206,87 @@ void q_reverseK(struct list_head *head, int k)
     // https://leetcode.com/problems/reverse-nodes-in-k-group/
 }
 
+int compare(struct list_head *a, struct list_head *b)
+{
+    if (a == b)
+        return 0;
+    int res = list_entry(a, element_t, list)->value -
+              list_entry(b, element_t, list)->value;
+    return res;
+}
+
+static void build_prev_link(struct list_head *head)
+{
+    struct list_head *node, *safe;
+    list_for_each_safe (node, safe, head) {
+        safe->prev = node;
+    }
+
+    /* The final links to make a circular doubly-linked list */
+    node->next = head;
+    head->prev = node;
+}
+
+struct list_head *merge(struct list_head *a, struct list_head *b)
+{
+    struct list_head *head = NULL;
+    struct list_head **tail = &head;
+
+    for (;;) {
+        if (compare(a, b) <= 0) {
+            *tail = a;
+            tail = &a->next;
+            a = a->next;
+            if (!a) {
+                *tail = b;
+                break;
+            }
+        } else {
+            *tail = b;
+            tail = &b->next;
+            b = b->next;
+            if (!b) {
+                *tail = a;
+                break;
+            }
+        }
+    }
+    return head;
+}
+
+#define SORT_BUFSIZE 32
+
 /* Sort elements of queue in ascending/descending order */
-void q_sort(struct list_head *head, bool descend) {}
+void q_sort(struct list_head *head, bool descend)
+{
+    if (!head || head->next == head->prev)
+        return;
+
+    struct list_head *pending[SORT_BUFSIZE] = {};
+    struct list_head *node, *safe;
+    int i;
+
+    head->prev->next = NULL;
+
+    list_for_each_safe (node, safe, head) {
+        node->next = NULL;
+
+        for (i = 0; i < SORT_BUFSIZE && pending[i]; i++) {
+            node = merge(pending[i], node);
+            pending[i] = NULL;
+        }
+
+        if (i == SORT_BUFSIZE)
+            i--;
+        pending[i] = node;
+    }
+
+    struct list_head *result = NULL;
+    for (i = 0; i < SORT_BUFSIZE; i++) {
+        result = merge(pending[i], result);
+    }
+    build_prev_link(result);
+}
 
 /* Remove every node which has a node with a strictly less value anywhere to
  * the right side of it */
